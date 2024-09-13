@@ -5,6 +5,8 @@ const axios = require('axios');
 const passport = require('passport');
 const githubStrategy = require('passport-github2').Strategy;
 require('dotenv').config();
+const MongoStore = require('connect-mongo');
+
 app.use(express.static(__dirname + '/public'));
 
 passport.use(new githubStrategy({
@@ -31,9 +33,10 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false, // NOTE TO SELF: set to true before deploying
+        secure: true, // NOTE TO SELF: set to true before deploying
         maxAge: 24 * 60 * 60 * 1000
     },
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
 }));
 
 app.use(passport.initialize());
@@ -60,6 +63,7 @@ const checkIfFollowing = async (req, res, next) => {
             return res.sendFile(__dirname + "/public/forbidden.html");
         }
     } catch (error) {
+        console.error('Errorin API call:', error.message);
         if (error.response && error.response.status === 404) {
             return res.sendFile(__dirname + "/public/forbidden.html");
         } else {
