@@ -12,7 +12,7 @@ app.use(express.static(__dirname + '/public'));
 passport.use(new githubStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/auth/github/callback',
+    callbackURL: 'https://byte-tasks-arpan.vercel.app/auth/github/callback',
 }, (accessToken, refreshToken, profile, done) => {
     profile.accessToken = accessToken;
     // console.log(accessToken, refreshToken, profile) 
