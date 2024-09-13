@@ -1,16 +1,19 @@
 const express = require('express');
+const session = require('express-session');
 const app = express();
 const axios = require('axios');
 const passport = require('passport');
 const githubStrategy = require('passport-github2').Strategy;
+require('dotenv').config();
+app.use(express.static(__dirname + '/public'));
 
 passport.use(new githubStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: 'http://localhost:3000/auth/github/callback',
-    scope: 'user:follow',
 }, (accessToken, refreshToken, profile, done) => {
-    console.log(accessToken, refreshToken, profile) 
+    profile.accessToken = accessToken;
+    // console.log(accessToken, refreshToken, profile) 
     return done(null, profile);
 }));
 
@@ -22,54 +25,73 @@ passport.deserializeUser((obj, done) => {
     done(null, obj);
   });
 
+app.use(session({ 
+    secret: process.env.SESSION_SECRET, 
+    resave: false, 
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        secure: false, // NOTE TO SELF: set to true before deploying
+        maxAge: 24 * 60 * 60 * 1000
+    },
+}));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
-const checkIfFollowing = async (req,res,next) =>{
-    if (!req.isAuthenticated() || !req.uer) {
-        return res.status(401).json({message: 'You are not authenticated !!'});
+const checkIfFollowing = async (req, res, next) => {
+    if (!req.isAuthenticated() || !req.user) {
+        return res.sendFile(__dirname + "/public/notAuthenticated.html");
     }
-    const accessToken = req.user;
-    const url = `https://api.github.com/user/following/bytemait`;
+
+    const accessToken = req.user.accessToken;  
+    const url = 'https://api.github.com/user/following/bytemait';
 
     try {
         const response = await axios.get(url, {
             headers: {
-                Authorization: `token ${accessToken}`,
+                Authorization: `token ${accessToken}`,  
                 Accept: 'application/vnd.github.v3+json',
             },
-    })
+        });
         if (response.status === 204) {
-            next();
+            return next(); 
+        } else {
+            return res.sendFile(__dirname + "/public/forbidden.html");
         }
-        else {
-            res.status(403).json({ message: `You must follow BYTE MAIT (@bytemait) to access this page.` });
-        }
-        }
-    catch (error){
+    } catch (error) {
         if (error.response && error.response.status === 404) {
-            res.status(403).json({ message: `You must follow BYTE MAIT (@bytemait) to access this page.` });
-    }   else {
-            res.status(500).json({ message: 'Internal server error' });
+            return res.sendFile(__dirname + "/public/forbidden.html");
+        } else {
+            return res.sendFile(__dirname + "/public/error.html");
         }
     }
-}
+};
+
 
 app.get('/protected', checkIfFollowing, (req,res) => {
-    res.json({ message: 'You are now accessing the protected route!' });
+    res.sendFile(__dirname + '/public/protected.html');
 })
 
 app.get('/', (req,res)=>{
-    res.sendFile(__dirname + '/index.html');
+    console.log(req)
+    res.sendFile(__dirname + '/public/index.html');
 })
 
 app.get('/auth/github', passport.authenticate('github'));
-app.get(
-    '/auth/github/callback',
-    passport.authenticate('github', { failureRedirect: '/' }),
-(req,res)=>{
+app.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/' }), (req,res)=>{
     res.redirect('/protected');
 })
+
+app.get('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            console.log(err)
+            return res.sendFile(__dirname + "/public/error.html");
+        }
+    });
+    res.redirect('/');
+});
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
