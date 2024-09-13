@@ -14,6 +14,11 @@ const redisClient = redis.createClient({
     port: 12195,
     password: process.env.REDIS_PASSWORD,
   });
+await redisClient.connect();
+redisClient.on('error', (err) => {
+    console.log('Redis error: ', err);
+});
+
 app.use(express.static(__dirname + '/public'));
 
 passport.use(new githubStrategy({
