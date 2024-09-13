@@ -1,7 +1,0 @@
-{ "version": 2, "rewrites": [
-    { "source": "/(.*)", "destination": "/" },
-    { "source:": "/auth/github", "destination": "/" },
-    { "source": "/auth/github/callback", "destination": "/" },
-    { "source": "/protected", "destination": "/" },
-    { "source": "logout", "destination": "/" }
-    ]}

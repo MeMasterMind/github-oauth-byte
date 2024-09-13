@@ -5,14 +5,13 @@ const axios = require('axios');
 const passport = require('passport');
 const githubStrategy = require('passport-github2').Strategy;
 require('dotenv').config();
-const MongoStore = require('connect-mongo');
 
 app.use(express.static(__dirname + '/public'));
 
 passport.use(new githubStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: 'https://byte-tasks-arpan.vercel.app/auth/github/callback',
+    callbackURL: 'https://byte-tasks-arpan.onrender.com/auth/github/callback',
 }, (accessToken, refreshToken, profile, done) => {
     profile.accessToken = accessToken;
     // console.log(accessToken, refreshToken, profile) 
@@ -36,7 +35,6 @@ app.use(session({
         secure: true, // NOTE TO SELF: set to true before deploying
         maxAge: 24 * 60 * 60 * 1000
     },
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
 }));
 
 app.use(passport.initialize());
