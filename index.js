@@ -1,11 +1,19 @@
 const express = require('express');
-const session = require('cookie-session');
+const session = require('express-session');
 const app = express();
 const axios = require('axios');
 const passport = require('passport');
 const githubStrategy = require('passport-github2').Strategy;
 require('dotenv').config();
 
+const RedisStore = require('connect-redis')(session);
+const redis = require('redis');
+
+const redisClient = redis.createClient({
+    host: 'redis-12195.c301.ap-south-1-1.ec2.redns.redis-cloud.com',  
+    port: 12195,
+    password: process.env.REDIS_PASSWORD,
+  });
 app.use(express.static(__dirname + '/public'));
 
 passport.use(new githubStrategy({
@@ -32,9 +40,10 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false, // NOTE TO SELF: set to true before deploying
+        secure: true, // NOTE TO SELF: set to true before deploying
         maxAge: 24 * 60 * 60 * 1000
     },
+    store: new RedisStore({ client: redisClient }),
 }));
 
 app.use(passport.initialize());
