@@ -1,5 +1,5 @@
 const express = require('express');
-const session = require('express-session');
+session = require('cookie-session');
 const app = express();
 const axios = require('axios');
 const passport = require('passport');
@@ -32,7 +32,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: true, // NOTE TO SELF: set to true before deploying
+        secure: false, // NOTE TO SELF: set to true before deploying
         maxAge: 24 * 60 * 60 * 1000
     },
 }));
