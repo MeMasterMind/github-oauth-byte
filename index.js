@@ -9,15 +9,21 @@ require('dotenv').config();
 const RedisStore = require('connect-redis').default;
 const redis = require('redis');
 
-const redisClient = redis.createClient({
-    host: 'redis-12195.c301.ap-south-1-1.ec2.redns.redis-cloud.com',  
-    port: 12195,
+const redisClient = redis.createClient({ 
     password: process.env.REDIS_PASSWORD,
+    socket: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT,
+    }
+ })
+
+redisClient.connect()
+  .then(() => {
+      console.log('Redis connected');
+  })
+  .catch((err) => {
+      console.error('Redis connection error:', err);
   });
-await redisClient.connect();
-redisClient.on('error', (err) => {
-    console.log('Redis error: ', err);
-});
 
 app.use(express.static(__dirname + '/public'));
 
@@ -45,7 +51,7 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: true, // NOTE TO SELF: set to true before deploying
+        secure: false, // NOTE TO SELF: set to true before deploying
         maxAge: 24 * 60 * 60 * 1000
     },
     store: new RedisStore({ client: redisClient }),
@@ -55,6 +61,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 const checkIfFollowing = async (req, res, next) => {
+    console.log(req.isAuthenticated())
+    console.log(req.user)
     if (!req.isAuthenticated() || !req.user) {
         return res.sendFile(__dirname + "/public/notAuthenticated.html");
     }
